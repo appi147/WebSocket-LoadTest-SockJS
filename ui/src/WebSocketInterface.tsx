@@ -1,14 +1,19 @@
-import React, { useState, useRef, useEffect } from 'react';
-import SockJS from 'sockjs-client';
-import { Client } from '@stomp/stompjs';
-import 'bootstrap/dist/css/bootstrap.min.css';
+import React, { useState, useRef, useEffect } from "react";
+import SockJS from "sockjs-client";
+import { Client } from "@stomp/stompjs";
+import "bootstrap/dist/css/bootstrap.min.css";
 
 const WebSocketInterface: React.FC = () => {
   const [connected, setConnected] = useState<boolean>(false);
-  const [status, setStatus] = useState<string>('Disconnected');
-  const [message, setMessage] = useState<string>('');
+  const [status, setStatus] = useState<string>("Disconnected");
+  const [message, setMessage] = useState<string>("");
   const [responses, setResponses] = useState<string[]>([]);
   const client = useRef<Client | null>(null);
+  const bottomRef = useRef<HTMLTableRowElement>(null);
+
+  useEffect(() => {
+    bottomRef.current?.scrollIntoView({ behavior: 'auto' });
+  }, [responses]);
 
   useEffect(() => {
     return () => {
@@ -19,14 +24,14 @@ const WebSocketInterface: React.FC = () => {
   }, []);
 
   const connect = () => {
-    const socket = new SockJS('https://localhost:8443/app-endpoint');
+    const socket = new SockJS("https://localhost:8443/app-endpoint");
     client.current = new Client({
       webSocketFactory: () => socket,
       onConnect: () => {
         setConnected(true);
-        setStatus('Connected');
+        setStatus("Connected");
         if (client.current) {
-          client.current.subscribe('/topic/response', (message) => {
+          client.current.subscribe("/topic/response", (message) => {
             const data = JSON.parse(message.body);
             setResponses((prev) => [...prev, data.value]);
           });
@@ -34,11 +39,11 @@ const WebSocketInterface: React.FC = () => {
       },
       onDisconnect: () => {
         setConnected(false);
-        setStatus('Disconnected');
+        setStatus("Disconnected");
       },
       onStompError: (frame) => {
         setConnected(false);
-        setStatus(`Error: ${frame.headers['message']}`);
+        setStatus(`Error: ${frame.headers["message"]}`);
       },
     });
 
@@ -48,13 +53,16 @@ const WebSocketInterface: React.FC = () => {
   const disconnect = () => {
     client.current?.deactivate();
     setConnected(false);
-    setStatus('Disconnected');
+    setStatus("Disconnected");
   };
 
   const sendMessage = () => {
     if (connected && client.current) {
-      client.current.publish({ destination: '/app/request', body: JSON.stringify({ value: message }) });
-      setMessage('');
+      client.current.publish({
+        destination: "/app/request",
+        body: JSON.stringify({ value: message }),
+      });
+      setMessage("");
     }
   };
 
@@ -64,21 +72,29 @@ const WebSocketInterface: React.FC = () => {
         <div className="card-body text-center">
           <h3 className="mb-4">WebSocket Interface</h3>
           <div className="mb-3 d-flex justify-content-center gap-2">
-            <button className="btn btn-success" onClick={connect} disabled={connected}>
+            <button
+              className="btn btn-success"
+              onClick={connect}
+              disabled={connected}
+            >
               Connect
             </button>
-            <button className="btn btn-danger" onClick={disconnect} disabled={!connected}>
+            <button
+              className="btn btn-danger"
+              onClick={disconnect}
+              disabled={!connected}
+            >
               Disconnect
             </button>
             <span
               className={`btn ${
-                status === 'Connected'
-                  ? 'btn-success'
-                  : status === 'Error'
-                  ? 'btn-warning'
-                  : 'btn-secondary'
+                status === "Connected"
+                  ? "btn-success"
+                  : status === "Error"
+                  ? "btn-warning"
+                  : "btn-secondary"
               }`}
-              style={{ cursor: 'default' }}
+              style={{ cursor: "default" }}
             >
               <strong>{status}</strong>
             </span>
@@ -95,9 +111,16 @@ const WebSocketInterface: React.FC = () => {
             <button
               className="btn btn-primary"
               onClick={sendMessage}
-              disabled={!connected || message.trim() === ''}
+              disabled={!connected || message.trim() === ""}
             >
               Send
+            </button>
+            <button
+              className="btn btn-warning"
+              onClick={() => setResponses([])}
+              disabled={!connected}
+            >
+              Clear
             </button>
           </div>
           {/* Table to display responses */}
@@ -117,6 +140,7 @@ const WebSocketInterface: React.FC = () => {
                     <td>{response}</td>
                   </tr>
                 ))}
+                <tr ref={bottomRef} />
               </tbody>
             </table>
           </div>
