@@ -19,7 +19,7 @@ const WebSocketInterface: React.FC = () => {
   }, []);
 
   const connect = () => {
-    const socket = new SockJS('http://localhost:8080/app-endpoint');
+    const socket = new SockJS('https://localhost:8443/app-endpoint');
     client.current = new Client({
       webSocketFactory: () => socket,
       onConnect: () => {
